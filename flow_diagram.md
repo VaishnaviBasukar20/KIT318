@@ -4,22 +4,14 @@
 
 ```mermaid
 flowchart TB
-    subgraph Client
-        C[Client Application]
-    end
-
-    subgraph MSP_Server
-        MS[MSPServer]
-        CH[ClientHandler]
-        WH[WorkerHandler]
-        Q[Job Queue]
-        DB[(Job Database)]
-    end
-
-    subgraph Worker_Node
-        W[Worker]
-        P[Python Executor]
-    end
+    C[Client Application]
+    MS[MSPServer]
+    CH[ClientHandler]
+    WH[WorkerHandler]
+    Q[Job Queue]
+    DB[(Job Database)]
+    W[Worker]
+    P[Python Executor]
 
     C -->|1. Connect| MS
     MS -->|2. Handle Connection| CH
