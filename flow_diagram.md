@@ -3,7 +3,7 @@
 ## System Architecture
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph Client
         C[Client Application]
     end
@@ -79,7 +79,7 @@ sequenceDiagram
 ## Error Handling Flow
 
 ```mermaid
-graph TD
+flowchart TD
     A[Job Submission] --> B{Valid Paths?}
     B -->|No| C[Return Error]
     B -->|Yes| D[Execute Job]
@@ -96,7 +96,7 @@ graph TD
 ## Data Flow
 
 ```mermaid
-graph LR
+flowchart LR
     A[Client] -->|1. Job Request| B[MSP Server]
     B -->|2. Store Job| C[(Job Database)]
     B -->|3. Queue Job| D[Job Queue]
