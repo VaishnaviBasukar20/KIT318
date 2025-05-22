@@ -2,86 +2,130 @@
 
 ## System Architecture
 
-```mermaid
-graph TD
-    C[Client Application]
-    MS[MSPServer]
-    CH[ClientHandler]
-    WH[WorkerHandler]
-    Q[Job Queue]
-    DB[(Job Database)]
-    W[Worker]
-    P[Python Executor]
-
-    C --> MS
-    MS --> CH
-    CH --> DB
-    CH --> Q
-    Q --> WH
-    WH --> W
-    W --> P
-    W --> WH
-    W --> WH
-    WH --> DB
-    CH --> C
+```
++----------------+     +------------------+     +----------------+
+|    Client      |     |   MSP Server     |     |    Worker      |
+|                |     |                  |     |                |
+| +------------+ |     | +--------------+ |     | +------------+ |
+| | Application| |     | | MSPServer    | |     | | Worker     | |
+| +------------+ |     | +--------------+ |     | +------------+ |
+|                |     | +--------------+ |     | +------------+ |
+|                |     | | ClientHandler| |     | | Python     | |
+|                |     | +--------------+ |     | | Executor   | |
+|                |     | +--------------+ |     | +------------+ |
+|                |     | | WorkerHandler| |     |                |
+|                |     | +--------------+ |     |                |
+|                |     | +--------------+ |     |                |
+|                |     | | Job Queue    | |     |                |
+|                |     | +--------------+ |     |                |
+|                |     | +--------------+ |     |                |
+|                |     | | Job Database | |     |                |
+|                |     | +--------------+ |     |                |
++----------------+     +------------------+     +----------------+
+        |                        |                      |
+        v                        v                      v
++----------------+     +------------------+     +----------------+
+|   Connect      |     |  Handle Request  |     |  Execute Job   |
+|   Login        |     |  Process Job     |     |  Send Status   |
+|   Submit Job   |     |  Update Status   |     |  Heartbeat     |
++----------------+     +------------------+     +----------------+
 ```
 
 ## Job Submission Flow
 
-```mermaid
-graph TD
-    A[Client Connect] --> B[Login]
-    B --> C[Submit Job]
-    C --> D[Store Job]
-    D --> E[Queue Job]
-    E --> F[Assign to Worker]
-    F --> G[Execute Python]
-    G --> H[Job Complete]
-    H --> I[Status Update]
+```
+Client                    Server                    Worker
+  |                         |                         |
+  |--- Connect ------------>|                         |
+  |                         |                         |
+  |--- Login -------------->|                         |
+  |                         |                         |
+  |<-- Login Success -------|                         |
+  |                         |                         |
+  |--- Submit Job --------->|                         |
+  |                         |                         |
+  |                         |--- Store Job ---------->|
+  |                         |                         |
+  |                         |--- Queue Job ---------->|
+  |                         |                         |
+  |                         |--- Assign Job --------->|
+  |                         |                         |
+  |                         |<-- Execute Python ------|
+  |                         |                         |
+  |                         |<-- Job Complete --------|
+  |                         |                         |
+  |<-- Status Update -------|                         |
+  |                         |                         |
 ```
 
 ## Worker Management Flow
 
-```mermaid
-graph TD
-    A[Worker Connect] --> B[Send Heartbeat]
-    B --> C[Check Jobs]
-    C --> D{Jobs Available?}
-    D -->|Yes| E[Assign Job]
-    E --> F[Process Job]
-    F --> C
-    D -->|No| G[Wait]
-    G --> B
+```
+Worker                    Server                    Queue
+  |                         |                         |
+  |--- Connect ------------>|                         |
+  |                         |                         |
+  |--- Heartbeat ---------->|                         |
+  |                         |                         |
+  |                         |--- Check Queue -------->|
+  |                         |                         |
+  |                         |<-- Jobs Available ------|
+  |                         |                         |
+  |<-- Assign Job ----------|                         |
+  |                         |                         |
+  |--- Process Job -------->|                         |
+  |                         |                         |
+  |--- Send Status -------->|                         |
+  |                         |                         |
+  |--- Heartbeat ---------->|                         |
+  |                         |                         |
 ```
 
 ## Error Handling Flow
 
-```mermaid
-graph TD
-    A[Job Submission] --> B{Valid Paths?}
-    B -->|No| C[Return Error]
-    B -->|Yes| D[Execute Job]
-    D --> E{Execution Success?}
-    E -->|No| F[Retry Job]
-    F -->|Retry Count < 3| D
-    F -->|Retry Count >= 3| G[Mark Failed]
-    E -->|Yes| H[Mark Complete]
+```
+Job Submission
+      |
+      v
+Valid Paths? ----- No ----> Return Error
+      |
+     Yes
+      |
+      v
+Execute Job
+      |
+      v
+Success? ----- No ----> Retry Job (if < 3 attempts)
+      |                  |
+      |                  v
+     Yes            Mark Failed
+      |
+      v
+Mark Complete
 ```
 
 ## Data Flow
 
-```mermaid
-graph LR
-    A[Client] --> B[MSP Server]
-    B --> C[(Job Database)]
-    B --> D[Job Queue]
-    D --> E[Worker]
-    E --> F[Python Script]
-    E --> G[Data Folder]
-    E --> H[Output Folder]
-    E --> B
-    B --> C
-    B --> A
+```
+Client -----> MSP Server -----> Job Database
+   ^              |
+   |              v
+   |           Job Queue
+   |              |
+   |              v
+   |            Worker
+   |              |
+   |              v
+   |        +-----+-----+
+   |        |     |     |
+   |        v     v     v
+   |    Python  Data  Output
+   |    Script  Folder Folder
+   |        |     |     |
+   |        +-----+-----+
+   |              |
+   |              v
+   +-------------+
 ```
 
 ## Component Responsibilities
